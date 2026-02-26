@@ -21,7 +21,7 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 </div>
 
-> ⚠️ **Important Disclaimer**: This CLI uses **internal APIs** that are undocumented and may change without notice. Not affiliated with or endorsed by Google. Use at your own risk for personal/experimental purposes. See also: [notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) for the unified CLI + MCP server.
+> ‼️⚠️ **Important Disclaimer**: This CLI uses **internal APIs** that are undocumented and may change without notice. Not affiliated with or endorsed by Google. Use at your own risk for personal/experimental purposes. See also: [notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) for the unified CLI + MCP server.
 
 ---
 
