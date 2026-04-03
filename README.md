@@ -1,375 +1,163 @@
-<div align="center">
+# The AI [X] Pipeline
 
-> [!CAUTION]
-> ## 🚨 Project Deprecated
-> **This project has been merged into [NotebookLM MCP CLI](https://github.com/jacob-bd/notebooklm-mcp-cli).**
-> 
-> No further updates will be made to this repository.
-> The new package includes both the CLI (`nlm`) and MCP server (`notebooklm-mcp`) in a single installation.
-
-</div>
+> AI가 스스로 세상의 문제를 찾고, 토론하고, 사업 소개서를 만든다.
 
 ---
 
-<div align="center">
-  <img src="assets/logo.jpeg" alt="NotebookLM CLI Logo">
-  <h1>NLM - NotebookLM CLI</h1>
-  <p><strong>A powerful command-line interface for Google NotebookLM</strong></p>
+## 개요
 
-  [![PyPI version](https://img.shields.io/pypi/v/notebooklm-cli.svg)](https://pypi.org/project/notebooklm-cli/)
-  [![Python](https://img.shields.io/pypi/pyversions/notebooklm-cli.svg)](https://pypi.org/project/notebooklm-cli/)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-</div>
+**The AI [X] Pipeline**은 Claude AI와 Google NotebookLM을 연결해,  
+아이디어 발굴부터 사업 소개서 슬라이드 생성까지 전 과정을 자동화하는 파이프라인입니다.
 
-> ‼️⚠️ **Important Disclaimer**: This CLI uses **internal APIs** that are undocumented and may change without notice. Not affiliated with or endorsed by Google. Use at your own risk for personal/experimental purposes. See also: [notebooklm-mcp-cli](https://github.com/jacob-bd/notebooklm-mcp-cli) for the unified CLI + MCP server.
+"The AI Vet", "The AI Lawyer", "The AI Farmer"처럼  
+실생활의 문제를 혁신적인 AI로 해결하는 새로운 사업 아이디어를 자율적으로 도출합니다.
 
 ---
 
-## 🎬 Demo
+## 파이프라인 구조
 
-Watch a ~12 minute overview of the CLI in action:
+```
+Phase 1  →  아이디어 10개 자유 발굴
+            실생활/전문직/산업 현장의 미해결 문제 탐색
+            각 아이디어: 문제 정의 + AI 적합성 + 시장 규모
 
-<a href="https://youtu.be/XyXVuALWZkE" target="_blank">
-  <img src="https://img.youtube.com/vi/XyXVuALWZkE/maxresdefault.jpg?v=2" alt="NotebookLM CLI Demo" width="600">
-</a>
+Phase 2  →  AI 에이전트 토론 — 최고 아이디어 선정
+            Champion (×3): 담당 아이디어 옹호
+            Market Critic: 시장성 냉정 평가
+            Innovative AI Agent: AI 혁신 잠재력 평가
+            Selector: 최종 1개 선정
+
+Phase 3  →  Google NotebookLM 웹 리서치
+            선정된 아이디어의 시장 데이터, 경쟁사, 트렌드 수집
+
+Phase 4  →  리서치 기반 심화 토론
+            Problem Expert: 문제 구조 분석
+            AI Solution Designer: 현실적 솔루션 설계
+            Innovative AI Agent: 대담한 AI 적용 아이디어
+            Devil's Advocate: 비판 & 약점 분석
+            Business Architect: 사업 모델 설계
+            Market Validator: 시장 검증
+
+Phase 5  →  The AI [X] 사업 소개서 설계
+            12장 구성: 문제 → AI 솔루션 → 시장 → 비즈니스 모델 → MVP → 비전
+
+Phase 6  →  Google NotebookLM 슬라이드 자동 생성
+```
 
 ---
 
-## ✨ Features
+## 아웃풋 예시
 
-- **Full NotebookLM API Coverage** — Notebooks, sources, audio podcasts, reports, quizzes, flashcards, mind maps, slides, infographics, videos, and data tables
-- **Seamless Authentication** — Uses Chrome DevTools Protocol for reliable, automatic cookie extraction
-- **AI-Teachable** — Run `nlm --ai` to output comprehensive documentation that AI assistants can consume
-- **Alias System** — Create memorable shortcuts for long UUIDs (e.g., `myproject` instead of `abc123-def456-...`)
-- **Multiple Output Formats** — Rich tables, JSON, quiet (IDs only), or full details
-- **Profile Support** — Manage multiple Google accounts with named profiles
-- **Research Integration** — Deep web search or Google Drive search to discover and import sources
+파이프라인이 자율적으로 생성한 사업 소개서:
+
+| 서비스명 | 도메인 | 핵심 문제 |
+|---------|--------|----------|
+| The AI Caregiver | 노인 돌봄 | 돌봄 인력 부족 & 고비용 |
+| The AI Accountant | 세무/회계 | 중소기업 세무 접근성 |
+| The AI Taxmate | 세금 신고 | 개인 세금 신고 복잡성 |
 
 ---
 
-## 📦 Installation
+## 사용 방법
 
-Install from PyPI using your preferred package manager:
+### 1. 설치
 
 ```bash
-# Using pip
+git clone https://github.com/leten02/the-ai-x-pipeline
+cd the-ai-x-pipeline
+
+python3 -m venv .venv
+.venv/bin/pip install anthropic
+```
+
+### 2. 인증
+
+**Anthropic API Key** 설정:
+```bash
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+**NotebookLM 로그인** (Chrome 필요):
+```bash
 pip install notebooklm-cli
-
-# Using pipx (recommended for CLI tools)
-pipx install notebooklm-cli
-
-# Using uv
-uv tool install notebooklm-cli
-```
-
-**Requirements:**
-- Python 3.10+
-- Google Chrome (for authentication)
-
----
-
-## 🚀 Quick Start
-
-### 1. Authenticate
-
-```bash
 nlm login
 ```
 
-This launches Chrome, navigates to NotebookLM, and automatically extracts your session cookies. You'll need to log in to your Google account if not already signed in.
-
-### 2. List Your Notebooks
+### 3. 실행
 
 ```bash
-nlm notebook list
+# 대화형 실행 (추천)
+.venv/bin/python3 run.py
+
+# 직접 실행
+.venv/bin/python3 pipeline.py --innovative-ai --rounds 2 --mode fast
 ```
 
-### 3. Create a Notebook and Add Sources
+### 옵션
 
-```bash
-# Create a new notebook
-nlm notebook create "My Research"
-# Output: Created notebook: abc123-def456-...
-
-# Add a URL source
-nlm source add abc123-def456 --url "https://example.com/article"
-
-# Add a YouTube video
-nlm source add abc123-def456 --url "https://youtube.com/watch?v=..."
-
-# Add pasted text
-nlm source add abc123-def456 --text "Your content here" --title "My Notes"
-```
-
-### 4. Generate a Podcast
-
-```bash
-nlm audio create abc123-def456 --confirm
-```
-
-### 5. Check Generation Status
-
-```bash
-nlm studio status abc123-def456
-```
+| 옵션 | 설명 | 기본값 |
+|------|------|--------|
+| `--rounds` | 토론 라운드 수 | 2 |
+| `--mode` | NLM 검색 모드 (`fast` / `deep`) | `fast` |
+| `--no-nlm` | NotebookLM 없이 Claude만 사용 | False |
+| `--lang` | 슬라이드 언어 | `ko` |
 
 ---
 
-## 🏷️ Aliases (UUID Shortcuts)
+## 기술 스택
 
-Tired of typing long UUIDs? Create aliases:
-
-```bash
-# Set an alias
-nlm alias set myproject abc123-def456-... # Types are auto-detected!
-
-# Now use the alias anywhere
-nlm notebook get myproject
-nlm source list myproject
-nlm audio create myproject --confirm
-
-# Manage aliases
-nlm alias list              # List all aliases
-nlm alias get myproject     # Resolve to UUID
-nlm alias delete myproject  # Remove alias
-```
+| 구성요소 | 역할 |
+|---------|------|
+| **Claude (Anthropic)** | 아이디어 생성, 멀티 에이전트 토론, 사업 소개서 설계 |
+| **Google NotebookLM** | 웹 리서치, 슬라이드 자동 생성 |
+| **notebooklm-cli** | NotebookLM API 연동 |
 
 ---
 
-## 🤖 AI Integration
+## 에이전트 구성
 
-### Option 1: Quick Context (`nlm --ai`)
+### Phase 2 — 아이디어 선정 토론
 
-The `--ai` flag outputs comprehensive, structured documentation designed for AI assistants:
+| 에이전트 | 역할 |
+|---------|------|
+| Champion 1/2/3 | 담당 아이디어 옹호 |
+| Market Critic | VC 관점 시장성 평가 |
+| Innovative AI Agent | AI 혁신 잠재력 평가 |
+| Selector | 최종 아이디어 선정 |
 
-```bash
-nlm --ai
-```
+### Phase 4 — 심화 토론
 
-This prints a 400+ line guide covering all commands with exact syntax, authentication flow, error handling, complete task sequences, and 12 tips for AI automation.
-
-**Use case:** Paste the output of `nlm --ai` into your AI assistant's context to teach it how to use the CLI.
-
-### Option 2: AI Skill (`nlm-cli-skill`)
-
-For AI coding assistants that support skills (Claude Code, Gemini CLI/Antigravity, etc.), we provide a pre-packaged skill.
-
-1. **Download**: [Click here to download nlm-cli-skill.zip](assets/nlm-cli-skill.zip) (hosted in this repo).
-2. **Install**: Extract the zip file into your AI tool's skills directory (e.g., `~/.gemini/antigravity/skills/`, `~/.claude/skills`, etc.).
-
-**Structure:**
-```
-nlm-cli-skill/
-├── SKILL.md              # Main skill file with 10 critical rules
-└── references/
-    ├── command_reference.md   # Complete command signatures
-    ├── troubleshooting.md     # Error diagnosis & solutions
-    └── workflows.md           # End-to-end task sequences
-```
+| 에이전트 | 역할 |
+|---------|------|
+| Problem Expert | 도메인 문제 구조 분석 |
+| AI Solution Designer | 현실적 AI 솔루션 설계 |
+| Innovative AI Agent | 대담한 AI 적용 아이디어 제안 |
+| Devil's Advocate | 약점 비판 & 결합 포인트 탐색 |
+| Business Architect | 수익 모델 & MVP 설계 |
+| Market Validator | TAM/SAM/SOM & 경쟁 분석 |
+| Strategist | 최종 전략 합성 |
 
 ---
 
-## 📚 Command Reference
+## 결과물
 
-### Core Commands
+파이프라인 실행 시 `output/` 폴더에 생성:
 
-| Command | Description |
-|---------|-------------|
-| `nlm login` | Authenticate with NotebookLM (opens Chrome) |
-| `nlm auth status` | Check if current session is valid |
-| `nlm notebook list` | List all notebooks |
-| `nlm notebook create "Title"` | Create a new notebook |
-| `nlm notebook get <id>` | Get notebook details |
-| `nlm notebook describe <id>` | Get AI-generated summary |
-| `nlm notebook query <id> "question"` | Chat with your sources |
-| `nlm notebook delete <id> --confirm` | Delete a notebook |
-
-### Source Management
-
-| Command | Description |
-|---------|-------------|
-| `nlm source list <notebook-id>` | List sources in a notebook |
-| `nlm source list <notebook-id> --drive` | Show Drive sources with freshness |
-| `nlm source list <notebook-id> --drive -S` | Faster listing, skip freshness checks |
-| `nlm source add <id> --url "..."` | Add URL or YouTube source |
-| `nlm source add <id> --text "..." --title "..."` | Add pasted text |
-| `nlm source add <id> --drive <doc-id>` | Add Google Drive document |
-| `nlm source describe <source-id>` | Get AI summary of source |
-| `nlm source content <source-id>` | Get raw text content |
-| `nlm source stale <notebook-id>` | List outdated Drive sources |
-| `nlm source sync <notebook-id> --confirm` | Sync Drive sources |
-
-### Research (Discover New Sources)
-
-| Command | Description |
-|---------|-------------|
-| `nlm research start "query" --notebook-id <id>` | Start web search (~30s) |
-| `nlm research start "query" --notebook-id <id> --mode deep` | Deep research (~5min) |
-| `nlm research start "query" --notebook-id <id> --source drive` | Search Google Drive |
-| `nlm research status <notebook-id>` | Check research progress |
-| `nlm research import <notebook-id> <task-id>` | Import discovered sources |
-
-### Content Generation
-
-All generation commands require `--confirm` (or `-y`) to execute:
-
-| Command | Description |
-|---------|-------------|
-| `nlm audio create <id> --confirm` | Generate podcast/audio overview |
-| `nlm report create <id> --confirm` | Generate briefing doc or study guide |
-| `nlm quiz create <id> --confirm` | Generate quiz questions |
-| `nlm flashcards create <id> --confirm` | Generate flashcards |
-| `nlm mindmap create <id> --confirm` | Generate mind map |
-| `nlm slides create <id> --confirm` | Generate slide deck |
-| `nlm infographic create <id> --confirm` | Generate infographic |
-| `nlm video create <id> --confirm` | Generate video overview |
-| `nlm data-table create <id> "description" --confirm` | Extract data as table |
-
-### Studio (Artifact Management)
-
-| Command | Description |
-|---------|-------------|
-| `nlm studio status <notebook-id>` | List all generated artifacts |
-| `nlm studio delete <notebook-id> <artifact-id> --confirm` | Delete an artifact |
-
-### Chat (Interactive Q&A)
-
-| Command | Description |
-|---------|-------------|
-| `nlm chat start <notebook-id>` | Start interactive REPL session |
-| `nlm chat configure <notebook-id>` | Configure chat goal and response style |
-| `nlm notebook query <id> "question"` | One-shot question (no session) |
-
-**Chat REPL commands:** `/sources`, `/clear`, `/help`, `/exit`
-
-### Configuration
-
-| Command | Description |
-|---------|-------------|
-| `nlm config show` | Show current configuration |
-| `nlm config get <key>` | Get a specific setting |
-| `nlm config set <key> <value>` | Update a setting |
-
-### Authentication
-
-| Command | Description |
-|---------|-------------|
-| `nlm login` | Authenticate with Chrome |
-| `nlm login --check` | Verify current credentials |
-| `nlm auth status` | Check session validity |
-| `nlm auth list` | List all profiles |
-| `nlm auth delete <profile> --confirm` | Delete a profile |
-
-## 🎛️ Output Formats
-
-Most list commands support multiple output formats:
-
-```bash
-nlm notebook list              # Rich table (default)
-nlm notebook list --json       # JSON output
-nlm notebook list --quiet      # IDs only (for scripting)
-nlm notebook list --title      # "ID: Title" format
-nlm source list --url          # "ID: URL" format
-nlm notebook list --full       # All columns
-```
+- **NotebookLM 슬라이드** — `notebooklm.google.com`에서 확인
+- **토론 뷰어** (HTML) — 전체 에이전트 토론 내용
+- **사업 소개서 설계** (JSON) — 슬라이드 구조 데이터
+- **리서치 결과** (TXT) — NotebookLM 조사 내용
 
 ---
 
-## 👤 Profiles (Multiple Accounts)
+## 주의사항
 
-Manage multiple Google accounts with named profiles:
-
-```bash
-# Login to a specific profile
-nlm login --profile work
-nlm login --profile personal
-
-# Use a profile for commands
-nlm notebook list --profile work
-
-# List all profiles
-nlm auth list
-
-# Delete a profile
-nlm auth delete work --confirm
-```
+- NotebookLM은 Google 계정 로그인이 필요합니다
+- `fast` 모드: 약 30초 소요 / `deep` 모드: 약 5분 소요
+- Anthropic API 비용이 발생합니다 (라운드당 약 $0.05~0.15)
 
 ---
 
-## ⌨️ Shell Completion
+## 라이선스
 
-Enable tab completion for faster command entry:
-
-```bash
-# Auto-install for your current shell
-nlm --install-completion
-
-# Or show the completion script to install manually
-nlm --show-completion
-```
-
----
-
-## ⚠️ Session Lifetime
-
-NotebookLM sessions typically last **~20 minutes**. If commands start failing with authentication errors, simply re-run:
-
-```bash
-nlm login
-```
-
----
-
-## 🔧 Troubleshooting
-
-Having issues? See the [Troubleshooting Guide](docs/TROUBLESHOOTING.md) for solutions to common problems including authentication, network issues, and OpenAI Codex sandbox configuration.
-
----
-
-## 📖 Documentation
-
-For detailed technical documentation on the internal API and advanced usage, see the [`docs/`](docs/) folder:
-
-- [Troubleshooting](docs/TROUBLESHOOTING.md) — Common issues and solutions
-- [CLI Test Plan](docs/CLI_TEST_PLAN.md) — End-to-end testing procedures
-- [Technical Deep Dive](docs/TECHNICAL_DEEP_DIVE.md) — Internal API details
-
-For AI assistants, run `nlm --ai` to get the full command reference.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-```bash
-# Quick start for contributors
-git clone https://github.com/jacob-bd/notebooklm-cli.git
-cd notebooklm-cli
-uv pip install -e ".[dev]"
-uv run pytest
-```
-
----
-
-## ⚠️ Limitations
-
-- **Rate limits**: Free tier has ~50 queries/day
-- **No official support**: API may change without notice
-- **Cookie expiration**: Need to re-authenticate every few weeks
-
----
-
-## 🎨 Vibe Coding Alert
-
-Full transparency: this project was built by a non-developer using AI coding assistants. If you're an experienced Python developer, you might look at this codebase and wince. That's okay.
-
-The goal here was to scratch an itch—programmatic access to NotebookLM—and learn along the way. The code works, but it's likely missing patterns, optimizations, or elegance that only years of experience can provide.
-
-**This is where you come in.** If you see something that makes you cringe, please consider contributing rather than just closing the tab. PRs and issues are welcome.
-
----
-
-## 📄 License
-
-MIT License. See [LICENSE](LICENSE) for details.
+MIT

@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+*.pyc
 *.pyo
 *.pyd
 .Python
@@ -69,3 +70,7 @@ todo.md
 
 # MCP reference folder (local only)
 mcp-reference/
+.gstack/
+
+# Pipeline output files
+output/
