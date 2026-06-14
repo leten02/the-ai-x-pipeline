@@ -2,26 +2,44 @@
 
 > AI가 스스로 세상의 문제를 찾고, 토론하고, 사업 소개서를 만든다.
 
----
-
-## 개요
-
-**The AI [X] Pipeline**은 Claude AI와 Google NotebookLM을 연결해,  
-아이디어 발굴부터 사업 소개서 슬라이드 생성까지 전 과정을 자동화하는 멀티 에이전트 파이프라인입니다.
-
-"The AI Vet", "The AI Lawyer", "The AI Farmer"처럼  
-실생활의 문제를 혁신적인 AI로 해결하는 새로운 사업 아이디어를 자율적으로 도출합니다.
+`Claude` 멀티 에이전트 토론 + `Google NotebookLM` 웹 리서치를 하나의 파이프라인으로 묶어,
+**아이디어 발굴부터 12슬라이드 사업 소개서 자동 생성까지** 사람 개입 없이 완주합니다.
 
 ---
 
-## 파이프라인 구조
+## 한눈에
+
+- **자율 발굴**: AI가 혁신 기술 기반 신사업 아이디어 10개를 스스로 만들고, 에이전트들이 토론으로 1개를 고릅니다.
+- **멀티 에이전트 토론**: Champion·Market Critic·Devil's Advocate·Lean Canvas Validator 등 **15+ 페르소나**가 서로 충돌하며 아이디어를 정제합니다.
+- **실데이터 리서치**: NotebookLM이 웹에서 실제 시장 데이터를 모아 토론에 주입합니다 (`--no-nlm`으로 Claude 단독 실행도 가능).
+- **결과물**: NotebookLM 슬라이드 + 토론 시각화 HTML 뷰어 + 구조화 JSON/TXT.
+
+---
+
+## 실행 모드
+
+같은 엔진을 4가지 입력 방식으로 돌릴 수 있습니다.
+
+| 모드 | 진입 | Phase 1 | 결과 |
+|------|------|---------|------|
+| **자율 신사업 발굴** | `--innovative-ai` | AI가 아이디어 10개 자동 생성 | 12슬라이드 사업 소개서 |
+| **주제 기반 발굴** | `--innovative-ai --user-topic "..."` | 지정 주제에서 아이디어 발굴 | 12슬라이드 사업 소개서 |
+| **PDF 기반 발굴** | `--innovative-ai --pdf paper.pdf` | 기술 논문에서 사업화 도메인 추출 | 12슬라이드 사업 소개서 |
+| **일반 주제 리서치** | `pipeline.py "주제"` (위치 인수) | 주제 분석 → 리서치 → 토론 | 9슬라이드 리서치 발표 |
+
+> 대화형 런처 `run.py`는 위 모드를 메뉴로 안내합니다 — `자유 토론`(일반 주제 리서치) / `아이디어 발굴`(신사업 발굴) 중 선택.
+
+---
+
+## 파이프라인 구조 (신사업 발굴 모드)
 
 ```
-Phase 1  →  아이디어 10개 자유 발굴
-Phase 2  →  에이전트 토론으로 최고 아이디어 1개 선정
-Phase 3  →  NotebookLM 웹 리서치
-Phase 4  →  리서치 기반 심화 토론
-Phase 5  →  The AI [X] 사업 소개서 설계 (12슬라이드)
+Phase 0  →  (선택) PDF 논문 텍스트 추출
+Phase 1  →  아이디어 10개 발굴 (자율 / 주제 / PDF)
+Phase 2  →  에이전트 토론으로 최고 아이디어 1개 선정 (10 → 1, 3라운드)
+Phase 3  →  NotebookLM 웹 리서치 (실제 시장 데이터 수집)
+Phase 4  →  리서치 기반 심화 토론 (Lean Canvas·TAM/SAM/SOM·moat 검증)
+Phase 5  →  The AI [X] 사업 소개서 설계 (12슬라이드 구조)
 Phase 6  →  NotebookLM 슬라이드 자동 생성
 ```
 
@@ -79,6 +97,7 @@ NotebookLM이 수집한 실제 시장 데이터를 바탕으로 사업을 구체
 | 페르소나 | 역할 | 관점 |
 |---------|------|------|
 | **Business Architect** 🏗 | 사업 설계자 | 토론 결과를 수익성 있는 사업으로 전환. 타겟 고객·수익 모델(구독/수수료/B2B)·수치 추정·MVP 3가지·초기 GTM 전략 설계 |
+| **Lean Canvas Validator** 📋 | 린캔버스 검증가 | 린스타트업 방법론으로 9블록(Problem·Customer·UVP·Solution·Channels·Revenue·Cost·Metrics·Unfair Advantage) 검증. 지금 당장 검증하지 않으면 사업이 무너질 **가장 위험한 가정 Top 3**와 2주 안에 실행 가능한 MVE(최소검증실험) 제시 |
 | **Market Validator** 📊 | 시장 검증가 | VC 관점에서 투자 매력도 검증. TAM/SAM/SOM 추정, 직접 경쟁자 분석, AI 차별점이 만드는 해자(moat), 시리즈 A 마일스톤 정의 |
 | **Strategist** 🎯 | 전략 합성가 | 전체 토론을 통합하여 최종 방향 확정. 서비스명·한 줄 tagline·AI 차별점·투자자에게 전달할 핵심 메시지 한 문장 도출 |
 
@@ -97,6 +116,29 @@ NotebookLM이 수집한 실제 시장 데이터를 바탕으로 사업을 구체
 
 ---
 
+## 사업 소개서 슬라이드 구조 (12장)
+
+Phase 5에서 토론 결과를 12슬라이드 구조로 설계해 NotebookLM에 넘깁니다.
+
+| # | 슬라이드 | type | 내용 |
+|---|---------|------|------|
+| 1 | 타이틀 | `title` | 서비스명 + tagline |
+| 2 | 문제 데이터 | `problem_data` | 시장 수치로 문제 크기 증명 |
+| 3 | 구조적 문제 | `problem_structure` | 3~4가지 구조적 문제 |
+| 4 | 기존 대안 | `competitive` | 기존 서비스의 한계·병목 |
+| 5 | 차별점 | `differentiation` | 우리 솔루션만의 차별점 2~3가지 |
+| 6 | 린캔버스 | `lean_canvas` | 9블록 요약 + 가장 위험한 가정 Top 3 & 검증 계획 |
+| 7 | 시장 조사 | `market` | TAM/SAM/SOM 또는 핵심 시장 데이터 |
+| 8 | 고객 정의 | `customer` | 타겟 세그먼트 (얼리어답터 중심) |
+| 9 | 비즈니스 모델 | `business` | 수익 구조 + 수치 추정 |
+| 10 | MVP | `mvp` | 핵심 기능 3가지 |
+| 11 | 실행 로드맵 | `roadmap` | 6개월/12개월 마일스톤 |
+| 12 | 비전 | `vision` | 최종 가치 제안 |
+
+> 일반 주제 리서치 모드는 `title·problem·research·solution·debate·strategy·technical·business·vision` 9슬라이드로 설계됩니다.
+
+---
+
 ## 사용 방법
 
 ### 1. 설치
@@ -106,54 +148,72 @@ git clone https://github.com/leten02/the-ai-x-pipeline
 cd the-ai-x-pipeline
 
 python3 -m venv .venv
-.venv/bin/pip install anthropic
+.venv/bin/pip install anthropic notebooklm-cli pymupdf keyring
 ```
+
+> Python 3.10+ 필요. `pymupdf`는 PDF 모드, `keyring`은 `run.py`의 API 키 보관(맥 키체인)에 쓰입니다.
 
 ### 2. 인증
 
-**Anthropic API Key** 설정:
+**Anthropic API Key** — 환경변수 또는 맥 키체인(`run.py`가 자동 저장):
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
-**NotebookLM 로그인** (Chrome 필요):
+**NotebookLM 로그인** (Chrome에 Google 계정 로그인 상태 필요):
 ```bash
-pip install notebooklm-cli
-nlm login
+.venv/bin/nlm login
 ```
+> NotebookLM 없이 Claude 단독으로 돌리려면 이 단계를 건너뛰고 `--no-nlm`을 쓰세요.
 
 ### 3. 실행
 
 ```bash
-# 대화형 실행 (추천)
+# 대화형 런처 (추천) — 모드·주제·옵션을 메뉴로 안내
 .venv/bin/python3 run.py
 
-# 직접 실행
-.venv/bin/python3 pipeline.py --innovative-ai --rounds 2 --mode fast
+# 자율 신사업 발굴
+.venv/bin/python3 pipeline.py --innovative-ai --rounds 3 --mode fast
+
+# 주제 기반 신사업 발굴
+.venv/bin/python3 pipeline.py --innovative-ai --user-topic "노인 돌봄" --user-problem "야간 돌봄 공백"
+
+# PDF 논문 기반 발굴
+.venv/bin/python3 pipeline.py --innovative-ai --pdf paper.pdf
+
+# 일반 주제 리서치 (NLM 없이)
+.venv/bin/python3 pipeline.py "전기차 충전 인프라" --no-nlm
 ```
 
 ### 옵션
 
 | 옵션 | 설명 | 기본값 |
 |------|------|--------|
+| `topic` | 일반 주제 리서치 대상 (위치 인수, 발굴 모드에선 생략) | — |
+| `--innovative-ai` | 혁신 AI 기반 신사업 자동 발굴 모드 | off |
+| `--user-topic` | 발굴 모드에서 지정할 주제 | — |
+| `--user-problem` | 사용자가 정의한 문제점 (발굴에 반영) | — |
+| `--pdf FILE...` | 사업화 도메인을 추출할 기술 논문 PDF | — |
 | `--rounds` | 심화 토론 라운드 수 | 2 |
 | `--mode` | NLM 검색 모드 (`fast` 30초 / `deep` 5분) | `fast` |
-| `--no-nlm` | NotebookLM 없이 Claude만 사용 | False |
-| `--lang` | 슬라이드 언어 | `ko` |
+| `--no-nlm` | NotebookLM 없이 Claude만 사용 | off |
+| `--lang` | NLM 리포트 언어 | `ko` |
+| `--out` | 출력 디렉토리 | `output` |
 
 ---
 
 ## 결과물
 
-실행 후 `output/` 폴더에 생성:
+실행 후 `output/` 폴더에 생성 (HTML 토론 뷰어는 자동으로 열립니다):
 
 | 파일 | 내용 |
 |------|------|
 | NotebookLM 슬라이드 | `notebooklm.google.com`에서 확인 |
-| `*_토론뷰어.html` | 전체 에이전트 토론 내용 시각화 |
-| `*_design.json` | 사업 소개서 슬라이드 구조 데이터 |
-| `*_debate.txt` | 에이전트 토론 전문 텍스트 |
-| `*_research.txt` | NotebookLM 리서치 결과 |
+| `*_토론뷰어.html` | 전체 에이전트 토론을 말풍선으로 시각화 |
+| `*_design_*.json` | 사업 소개서 슬라이드 구조 데이터 |
+| `*_framework_*.json` | 아이디어 프레임(후보 도메인·선정 결과) |
+| `*_debate_*.txt` | 에이전트 토론 전문 텍스트 |
+| `*_research_*.txt` | NotebookLM 리서치 Q&A |
 
 ---
 
@@ -173,16 +233,41 @@ nlm login
 
 | 구성요소 | 역할 |
 |---------|------|
-| **Claude (Anthropic)** | 아이디어 생성, 멀티 에이전트 토론, 사업 소개서 설계 |
+| **Claude (`claude-sonnet-4-6`)** | 아이디어 생성, 멀티 에이전트 토론, 사업 소개서 설계 |
 | **Google NotebookLM** | 웹 리서치, 슬라이드 자동 생성 |
-| **notebooklm-cli** | NotebookLM API 연동 |
+| **notebooklm-cli (`nlm`)** | NotebookLM 자동화 연동 |
+| **PyMuPDF** | PDF 논문 텍스트 추출 (Phase 0) |
+| **keyring** | API 키 맥 키체인 보관 |
+
+핵심 설계: `DebateMemory`가 라운드마다 토론 맥락을 누적해 다음 에이전트에 주입하고,
+각 Phase 산출물을 JSON으로 구조화해 NLM 리서치·슬라이드 단계로 핸드오프합니다.
+
+---
+
+## AI 스킬로 설치 (Claude Code / Gemini CLI 등)
+
+AI 코딩 도구에서 자연어로 이 파이프라인을 구동할 수 있는 스킬을 제공합니다.
+
+1. **다운로드**: 이 저장소의 [`the-ai-x-pipeline-skill/`](./the-ai-x-pipeline-skill) 폴더를 받습니다.
+2. **설치**: 폴더를 AI 도구의 스킬 디렉토리에 넣습니다 (예: `~/.claude/skills/`).
+3. **사용**: `"신사업 아이디어 발굴해줘"`, `"이 주제로 발표자료 만들어줘"` 같이 요청하면 스킬이 셋업·실행·결과 안내까지 처리합니다.
+
+```
+the-ai-x-pipeline-skill/
+├── SKILL.md                  # 트리거 + 셋업 + 실행 규칙
+└── references/
+    ├── modes.md              # 4가지 실행 모드 & 플래그
+    ├── personas.md           # 15+ 에이전트 페르소나
+    └── troubleshooting.md    # 인증·NLM·비용 문제 해결
+```
 
 ---
 
 ## 주의사항
 
-- NotebookLM은 Google 계정 로그인이 필요합니다
+- NotebookLM은 Google 계정 로그인이 필요합니다 (`--no-nlm`으로 우회 가능)
 - Anthropic API 비용이 발생합니다 (실행당 약 $0.05~0.20)
+- NLM 세션은 약 20분 후 만료 — 명령이 실패하면 `nlm login` 재실행
 
 ---
 

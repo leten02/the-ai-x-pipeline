@@ -84,6 +84,10 @@ def parse_args():
                    help="분석할 주제 (--innovative-ai 모드에서는 생략)")
     p.add_argument("--innovative-ai", action="store_true",
                    help="혁신 AI 기술 기반 신사업 자동 발굴 모드")
+    p.add_argument("--user-topic",   default="",
+                   help="신사업 발굴 모드에서 사용자가 지정한 주제")
+    p.add_argument("--user-problem", default="",
+                   help="사용자가 직접 정의한 문제점 (선택, 있으면 아이디어 발굴에 반영)")
     p.add_argument("--pdf",     nargs="+", metavar="FILE",
                    help="AI 기술 논문 PDF 경로 (옵션)")
     p.add_argument("--rounds",  type=int, default=2, help="토론 라운드 수 (기본 2)")
@@ -190,39 +194,54 @@ def phase0_extract_pdfs(pdf_paths: list[str]) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# 혁신 AI 기술 지식 (논문 3편 핵심 요약 — 프롬프트 내장)
+# 스타트업 방법론 컨텍스트 (참조용)
 # ═══════════════════════════════════════════════════════════════════
-INNOVATIVE_AI_KNOWLEDGE = """
-방향성 요약 (참고용):
-- AI가 과학적 발견 프로세스 자체를 자동화하는 시대 (가설→실험→검증→논문 루프)
-- 물리 세계와 연결된 자율 실험실 (AI + 로봇 + 센서가 실험을 스스로 수행)
-- 멀티모달 에이전트가 지식을 해석하는 것을 넘어 직접 행동하는 "Lab-pilot" 전환
-- 핵심 키워드: Agentic AI, Self-Driving Lab, Open-Ended Discovery, Scientific Automation
+STARTUP_CONTEXT = """
+[Running Lean — Ash Maurya]
+- 문제-해결책 적합성(Problem-Solution Fit)이 제품-시장 적합성(PMF)보다 먼저다
+- 고객이 "Top 3 문제"로 꼽을 만큼 심각해야 한다 (빈도 × 강도 × 기존 해결책 부재)
+- 가장 위험한 가정(Riskiest Assumption)부터 먼저 검증하라
+- 린 캔버스: 솔루션보다 문제를 먼저 채워라
+
+[스타트업 바이블 — Steve Blank]
+- 얼리반젤리스트(Earlyvangelists): 문제를 인식하고, 해결책을 찾고 있으며, 돈을 쓸 준비가 된 고객
+- "빌딩 밖으로 나가라" — 가설은 고객 인터뷰로만 검증된다
+- 고객 원형(Archetype): 통계적 인구가 아닌, 이름과 직업과 일상이 있는 한 명의 구체적인 사람
+
+[아이디어 불패법칙 — Alberto Savoia]
+- XYZ 가설: "최소 X%의 [구체적 고객]이 [구체적 조건에서] [구체적 행동]을 할 것이다"
+- Pretotyping: 만들기 전에 수요를 검증하라 — 랜딩페이지, 페이크도어, 피노키오 테스트
+- 대부분의 아이디어는 시장에서 실패한다. 빠르게 틀렸음을 증명하고 피벗하라
+- YODA(Your Own Data and Analysis): 분석 리포트보다 직접 관찰한 데이터가 진짜다
 """
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Phase 1 (혁신 AI 모드): 신사업 도메인 후보 자동 도출
+# Phase 1 (신사업 발굴 모드): 스타트업 아이디어 후보 자동 도출
 # ═══════════════════════════════════════════════════════════════════
 def phase1_innovative_ai(client) -> dict:
-    banner(1, "The AI [X] 신사업 도메인 발굴")
+    banner(1, "스타트업 아이디어 발굴")
 
     system = textwrap.dedent("""
         당신은 세계 최고의 스타트업 발굴 전문가입니다.
-        세상의 다양한 산업에서 사람들이 겪는 진짜 문제를 찾고,
-        거기에 "The AI [X]" 형태의 AI 솔루션 사업 기회를 발굴하세요.
+        출발점은 반드시 "문제"입니다. 기술이나 아이디어가 아닙니다.
 
-        참고: "The AI Vet"처럼 특정 직군/역할을 AI로 대체/강화하는 사업 모델.
-        예시: The AI Vet(반려동물 수의사), The AI Lawyer(법률), The AI Farmer(농업)
+        ⚠️ 핵심 원칙: 문제 우선 (Problem-First)
+        - 먼저 사람들이 겪는 심각한 문제를 찾는다
+        - 그 문제가 얼마나 빈번하고, 비싸고, 해결이 안 되고 있는지 확인한다
+        - "재미있어 보이는 아이디어"가 아니라 "없으면 정말 곤란한 것"을 찾아야 한다
+        - 기술 방식(AI, SaaS, 플랫폼 등)에 제한 없이 문제 해결이 중심
 
         반환 형식 (JSON만, 코드블록 없이):
         {
           "candidate_domains": [
             {
               "domain": "도메인명 (예: 반려동물 의료)",
-              "service_name": "The AI [X] 형식의 서비스명",
-              "pain_point": "이 도메인에서 사람들이 실제로 겪는 가장 심각한 문제",
-              "why_ai": "왜 기존 방식으로는 해결 안 되고 AI만 가능한지",
+              "service_name": "스타트업 서비스명 (간결하게)",
+              "pain_point": "이 도메인에서 사람들이 실제로 겪는 가장 심각한 문제 — 구체적 수치나 사례 포함",
+              "problem_evidence": "이 문제가 실재함을 증명하는 근거 (통계, 뉴스, 현장 사례)",
+              "why_existing_fails": "기존 해결책이 왜 부족한지 — 비용/접근성/속도/정확도 중 무엇이 문제인가",
+              "solution_approach": "이 스타트업이 어떤 방식으로 문제를 해결할 수 있는지 (기술 방식 무관)",
               "market_size": "글로벌 시장 규모 ($)",
               "target_customer": "주요 타겟 고객",
               "example_company": "유사 방향의 기존 기업 (없으면 None)"
@@ -239,22 +258,19 @@ def phase1_innovative_ai(client) -> dict:
     """).strip()
 
     user_msg = """
-세상에는 아직 AI가 제대로 해결하지 못한 문제들이 많습니다.
-특히 전문가 접근이 어렵거나 비용이 비싸거나 지역 격차가 심한 분야에서
-AI가 게임체인저가 될 수 있습니다.
+좋은 스타트업 아이디어는 항상 문제에서 시작합니다.
+"이런 게 있으면 재미있겠다"가 아니라 "이 문제 때문에 사람들이 지금 이 순간에도 고통받고 있다"에서 출발해야 합니다.
 
-지금 당장 "The AI [직군/역할]" 형태로 사업화할 수 있는 도메인 10개를 찾아주세요.
+다음 기준으로 스타트업 아이디어 도메인 10개를 찾아주세요:
 
-조건:
-- 실제 사람들이 돈을 낼 만큼 심각한 문제가 있는 분야
-- 기존 해결책이 부족하거나 비싸거나 접근하기 어려운 영역
-- AI 에이전트/멀티모달/자율 추론 기술로 실질적 해결이 가능한 분야
-- 연구소나 학술 도메인 제외, 실생활/비즈니스 현장 중심
-- 서로 다른 산업군에서 골고루 선정할 것
-- 2025년 기준 바로 시작할 수 있는 분야 우선
+1. 문제가 먼저 — 실제로 사람들이 매일/매주 직면하는 고통스러운 문제
+2. 기존 해결책의 실패 — 지금 있는 방법이 너무 비싸거나, 느리거나, 접근하기 어렵다
+3. 스타트업이 게임체인저인 이유 — 왜 지금 이 팀/방식으로 이 문제를 해결할 수 있는가
+4. 돈을 낼 의향 — 이 문제가 해결되면 실제로 비용을 지불할 고객이 있다
+5. 연구/학술 제외 — 실생활/비즈니스 현장 중심, 지금 바로 시작 가능
 """
 
-    info("Claude가 신사업 도메인 발굴 중...")
+    info("Claude가 스타트업 아이디어 발굴 중...")
     raw = claude_call(client, system, [{"role": "user", "content": user_msg}], max_tokens=4500)
 
     frame = safe_json(raw)
@@ -264,7 +280,7 @@ AI가 게임체인저가 될 수 있습니다.
     for i, d in enumerate(domains, 1):
         print(f"  {GREEN}{i}.{RST} {BOLD}{d.get('service_name', d.get('domain',''))}{RST}")
         print(f"     문제: {d.get('pain_point','')[:60]}...")
-        print(f"     시장: {d.get('market_size','?')} | AI 적합성: {d.get('why_ai','')[:50]}...")
+        print(f"     시장: {d.get('market_size','?')} | 해결 방향: {d.get('solution_approach','')[:50]}...")
 
     return frame
 
@@ -296,15 +312,18 @@ def phase2_idea_debate(client, frame: dict) -> dict:
     for i, group in enumerate(groups):
         ideas = "\n".join(
             f"  - {d.get('service_name', d.get('domain',''))}: {d.get('pain_point','')[:60]}"
+            f" | 근거: {d.get('problem_evidence','')[:40]}"
             for d in group
         )
         resp = run_agent(client, f"Champion {i+1} (아이디어 챔피언 {i+1})",
-            f"담당 아이디어들의 열렬한 지지자. 시장 기회와 AI 적합성을 가장 잘 아는 전문가",
-            f"다음 아이디어들 중 가장 잠재력 있는 것을 골라 강력히 주장하세요:\n{ideas}\n\n"
-            f"왜 이 아이디어가 다른 모든 아이디어보다 우월한지 구체적 근거를 제시하세요:\n"
-            f"- 문제의 심각성과 시장 규모\n"
-            f"- AI로 해결 가능한 이유\n"
-            f"- 경쟁 우위\n"
+            f"담당 아이디어들의 열렬한 지지자. 단, 문제의 실재성이 없으면 절대 지지하지 않는다.",
+            f"다음 아이디어들 중 '문제가 가장 실재하고 심각한' 것을 골라 강력히 주장하세요:\n{ideas}\n\n"
+            f"반드시 이 순서로 근거를 제시하세요:\n"
+            f"1. 이 문제가 실제로 존재한다는 증거 (수치/사례)\n"
+            f"2. 기존 해결책이 왜 실패하고 있는가\n"
+            f"3. 스타트업이 이 문제를 해결할 수 있는 이유\n"
+            f"4. 고객이 실제로 돈을 낼 의향이 있는 이유\n"
+            f"'재미있어 보이는 아이디어'는 탈락. 문제의 고통이 클수록 좋은 아이디어다.\n\n"
             f"전체 아이디어 목록:\n{idea_list}",
             memory, max_tokens=600)
         print_agent_speech(f"Champion {i+1} (아이디어 챔피언 {i+1})", resp)
@@ -323,28 +342,31 @@ def phase2_idea_debate(client, frame: dict) -> dict:
         memory, max_tokens=700)
     print_agent_speech("Market Critic (시장 비평가)", resp)
 
-    resp = run_agent(client, "Innovative AI Agent (혁신 AI 전문가)",
-        "최첨단 AI 기술을 가장 잘 아는 전문가. 어떤 아이디어가 AI로 가장 강력해질 수 있는지 판단",
-        f"AI 기술 관점에서 10개 아이디어를 평가하세요:\n"
-        f"- 멀티에이전트/자율 추론/피드백 루프로 기존 대비 10배 임팩트를 낼 수 있는 아이디어\n"
-        f"- 아무도 시도하지 않은 방식으로 AI를 적용할 수 있는 아이디어\n"
-        f"- 데이터 플라이휠 효과로 시간이 갈수록 강해지는 아이디어\n"
-        f"AI 혁신 잠재력 기준 Top 3를 선정하고 이유를 설명하세요.\n\n"
+    resp = run_agent(client, "Growth Expert (성장 잠재력 분석가)",
+        "스타트업 성장 전략가. 어떤 아이디어가 빠르게 스케일업 가능한지 판단하는 전문가",
+        f"성장 잠재력 관점에서 10개 아이디어를 평가하세요:\n"
+        f"- 네트워크 효과나 플라이휠이 작동해서 시간이 갈수록 강해지는 아이디어\n"
+        f"- 초기 팀이 빠르게 실행해 시장을 선점할 수 있는 아이디어\n"
+        f"- 고객 획득 비용(CAC) 대비 생애 가치(LTV)가 좋을 아이디어\n"
+        f"성장 잠재력 기준 Top 3를 선정하고 이유를 설명하세요.\n\n"
         f"전체 아이디어:\n{idea_list}",
         memory, max_tokens=700)
-    print_agent_speech("Innovative AI Agent (혁신 AI 전문가)", resp)
+    print_agent_speech("Growth Expert (성장 잠재력 분석가)", resp)
 
     # ── 라운드 3: 최종 선정 ──
     print(f"\n  {BOLD}── 라운드 3: 최종 선정 ──{RST}")
 
     resp = run_agent(client, "Selector (최종 선정자)",
-        "모든 토론을 종합하여 단 하나의 최고 아이디어를 선정하는 총책임자",
+        "모든 토론을 종합하여 단 하나의 최고 아이디어를 선정하는 총책임자. "
+        "문제가 없는 아이디어는 아무리 기술이 멋져도 탈락시킨다.",
         f"지금까지 토론을 종합하여 최종 아이디어 1개를 선정하세요.\n\n"
-        f"선정 기준 (우선순위 순):\n"
-        f"1. 문제의 심각성 — 사람들이 실제로 돈을 낼 만큼 아픈 문제인가?\n"
-        f"2. AI 차별성 — AI가 아니면 해결 불가능한 방식인가?\n"
-        f"3. 시장 규모 — 충분히 큰 시장인가?\n"
-        f"4. 실행 가능성 — 지금 당장 시작할 수 있는가?\n\n"
+        f"선정 기준 (이 순서가 절대적 우선순위):\n"
+        f"1. 문제의 실재성 — 지금 이 순간에도 사람들이 실제로 겪고 있는가? 증거가 있는가?\n"
+        f"2. 기존 해결책의 실패 — 기존 방법으로는 왜 해결이 안 되는가?\n"
+        f"3. 실행 가능성 — 소규모 팀이 빠르게 MVP를 만들고 시장을 검증할 수 있는가?\n"
+        f"4. 지불 의향 — 이 문제 해결에 실제로 돈을 낼 고객이 있는가?\n"
+        f"5. 성장 잠재력 — 시장 규모와 스케일업 가능성은 위 4가지가 충족된 후 고려\n\n"
+        f"'기술이 멋있어 보이는 아이디어'는 탈락 사유다. 문제 우선.\n"
         f"반드시 아이디어 번호와 서비스명을 명시하고, 선정 이유를 3줄로 요약하세요.\n\n"
         f"전체 아이디어:\n{idea_list}",
         memory, max_tokens=500)
@@ -364,6 +386,74 @@ def phase2_idea_debate(client, frame: dict) -> dict:
     frame["selected_domain"] = selected
     ok(f"선정된 아이디어: {BOLD}{selected.get('service_name', selected.get('domain',''))}{RST}")
     ok(f"문제: {selected.get('pain_point','')[:60]}")
+
+    return frame
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Phase 1 (사용자 주제 모드): 지정 주제 → 도메인 프레임 즉시 생성
+# ═══════════════════════════════════════════════════════════════════
+def phase1_from_topic(client, user_topic: str, user_problem: str = "") -> dict:
+    """사용자가 주제(+선택적 문제점)를 제공한 경우 — 해당 주제 범위 내 10개 아이디어 발굴"""
+    banner(1, f"'{user_topic}' 주제 기반 신사업 아이디어 발굴")
+
+    system = textwrap.dedent("""
+        당신은 세계 최고의 스타트업 발굴 전문가입니다.
+        출발점은 반드시 "문제"입니다. 기술이나 아이디어가 아닙니다.
+
+        ⚠️ 핵심 원칙: 문제 우선 (Problem-First)
+        - 먼저 이 주제/도메인 안에서 사람들이 실제로 겪는 심각한 문제를 찾는다
+        - 그 문제가 얼마나 빈번하고, 비싸고, 기존 방법으로는 해결이 안 되는지 확인한다
+        - "재미있어 보이는 아이디어"가 아니라 "없으면 정말 곤란한 것"을 찾아야 한다
+        - 같은 주제 안에서도 타겟 고객/문제 유형/해결 방식이 다른 아이디어로 다양하게 구성하세요
+
+        반환 형식 (JSON만, 코드블록 없이):
+        {
+          "candidate_domains": [
+            {
+              "domain": "세부 도메인명",
+              "service_name": "스타트업 서비스명 (간결하게)",
+              "pain_point": "이 세부 도메인에서 사람들이 실제로 겪는 가장 심각한 문제 — 구체적 수치나 사례 포함",
+              "problem_evidence": "이 문제가 실재함을 증명하는 근거 (통계, 뉴스, 현장 사례)",
+              "why_existing_fails": "기존 해결책이 왜 부족한지 — 비용/접근성/속도/정확도 중 무엇이 문제인가",
+              "solution_approach": "이 스타트업이 어떤 방식으로 문제를 해결할 수 있는지",
+              "market_size": "글로벌 시장 규모 ($)",
+              "target_customer": "주요 타겟 고객",
+              "example_company": "유사 방향의 기존 기업 (없으면 None)"
+            }
+          ],
+          "nlm_search_queries": ["시장 조사용 영어 검색 쿼리 4개"],
+          "nlm_queries": ["NLM notebook 한국어 질의 4개"]
+        }
+
+        candidate_domains는 반드시 10개. 주어진 주제 안에서 최대한 다양한 각도로 찾아주세요.
+        반드시 JSON만 반환하세요.
+    """).strip()
+
+    problem_context = (
+        f"\n\n[사용자가 직접 정의한 문제점]\n{user_problem}\n"
+        f"→ 이 문제를 반드시 핵심 출발점으로 삼아 아이디어를 발굴하세요. "
+        f"이 문제에서 파생되거나 연결된 다양한 세부 문제와 해결 방향을 탐색하세요."
+        if user_problem else ""
+    )
+
+    user_msg = (
+        f"주제: '{user_topic}'"
+        f"{problem_context}\n\n"
+        f"이 주제 안에서 실제로 사람들이 고통받고 있는 문제부터 찾아주세요.\n"
+        f"'재미있어 보이는 아이디어'가 아니라 '지금 당장 해결 안 되면 곤란한 문제'에서 출발하세요.\n"
+        f"문제를 먼저 정의하고, 그 문제를 가장 잘 해결하는 방식을 붙이는 순서로 10개를 발굴하세요."
+    )
+
+    info("Claude가 주제 기반 아이디어 발굴 중...")
+    raw = claude_call(client, system, [{"role": "user", "content": user_msg}], max_tokens=4500)
+    frame = safe_json(raw)
+
+    domains = frame.get("candidate_domains", [])
+    print(f"\n  {BOLD}'{user_topic}' 기반 후보 아이디어 {len(domains)}개:{RST}")
+    for i, d in enumerate(domains, 1):
+        print(f"  {GREEN}{i}.{RST} {BOLD}{d.get('service_name', d.get('domain',''))}{RST}")
+        print(f"     문제: {d.get('pain_point','')[:60]}...")
 
     return frame
 
@@ -773,8 +863,8 @@ Optimist와 Risk Analyst의 토론을 종합하여:
 
 def phase3_pdf_debate(client, frame: dict, research_data: dict, rounds: int,
                       pdf_texts: str) -> tuple[DebateMemory, list]:
-    """선택된 도메인의 문제 → AI 솔루션 → 사업 설계 토론"""
-    banner(3, f"The AI [X] 사업 설계 토론 ({rounds}라운드)")
+    """선택된 도메인의 문제 → 솔루션 → 사업 설계 토론"""
+    banner(3, f"스타트업 사업 설계 토론 ({rounds}라운드)")
 
     memory = DebateMemory()
     selected = frame.get("selected_domain", {})
@@ -790,7 +880,6 @@ def phase3_pdf_debate(client, frame: dict, research_data: dict, rounds: int,
     ])[:1500]
 
     # 에이전트들이 공유하는 컨텍스트
-    # 논문은 "혁신 AI가 이런 것이다"는 참조 사례일 뿐, 우리 기술이 아님
     context = f"""
 [우리가 해결할 도메인]
 {domain}
@@ -801,20 +890,20 @@ def phase3_pdf_debate(client, frame: dict, research_data: dict, rounds: int,
 [시장 규모]
 {market_size}
 
-[AI 적합성 근거]
+[솔루션 방향 근거]
 {why_fit}
 
 [시장 조사 결과]
 {research_summary}
 
-[혁신 AI 가능성 참조 — 이런 수준의 AI가 존재한다는 맥락]
+[스타트업 컨텍스트 참조]
 {pdf_texts[:800]}
 """.strip()
 
     all_results = []
 
-    # ── 라운드 1: 문제 정의 & AI 솔루션 설계 ──
-    print(f"\n  {BOLD}── 라운드 1: 문제 정의 & AI 솔루션 설계 ──{RST}")
+    # ── 라운드 1: 문제 정의 & 솔루션 설계 ──
+    print(f"\n  {BOLD}── 라운드 1: 문제 정의 & 솔루션 설계 ──{RST}")
 
     resp = run_agent(client, "Problem Expert (문제 전문가)",
         f"'{domain}' 분야의 현장 전문가. 실제 사용자가 겪는 문제를 가장 잘 아는 사람",
@@ -824,38 +913,37 @@ def phase3_pdf_debate(client, frame: dict, research_data: dict, rounds: int,
         memory, max_tokens=600)
     print_agent_speech("Problem Expert (문제 전문가)", resp)
 
-    resp = run_agent(client, "AI Solution Designer (AI 솔루션 설계자)",
-        "최신 AI 기술로 실제 사업 솔루션을 설계하는 전문가",
-        f"Problem Expert가 정의한 '{domain}' 문제들을 AI로 어떻게 해결할 수 있는지 설계하세요.\n"
-        f"혁신 AI(멀티에이전트, 자율 추론, 실시간 분석 등)를 활용한 구체적 솔루션을 제안하세요.\n"
-        f"이 솔루션의 이름은 'The AI [적절한 단어]' 형식으로 제안하고, 핵심 기능 3가지를 정의하세요.",
+    resp = run_agent(client, "Solution Designer (솔루션 설계자)",
+        "실제 사업 솔루션을 설계하는 전문가. 기술 방식에 구애받지 않고 문제 해결에 집중",
+        f"Problem Expert가 정의한 '{domain}' 문제들을 어떻게 해결할 수 있는지 설계하세요.\n"
+        f"구체적인 솔루션을 제안하고, 서비스명과 핵심 기능 3가지를 정의하세요.\n"
+        f"어떤 방식(SaaS, 플랫폼, 마켓플레이스, 하드웨어 등)으로 구현할지도 제안하세요.",
         memory, max_tokens=600)
-    print_agent_speech("AI Solution Designer (AI 솔루션 설계자)", resp)
+    print_agent_speech("Solution Designer (솔루션 설계자)", resp)
 
-    resp = run_agent(client, "Innovative AI Agent (혁신 AI 아이디어러)",
-        "아무도 시도하지 않은 방식으로 AI를 적용하는 급진적 혁신가. "
-        "멀티에이전트 오케스트레이션, 피드백 루프, 자율 추론, 실시간 멀티모달 처리 등 "
-        "최첨단 AI 기술을 조합해 '이게 진짜 가능해?' 싶은 아이디어를 낸다.",
-        f"AI Solution Designer의 솔루션은 너무 평범하다. "
-        f"'{domain}' 도메인에서 아무도 생각하지 못한 방식으로 AI를 적용하는 아이디어를 제안하라.\n\n"
+    resp = run_agent(client, "Creative Strategist (창의적 전략가)",
+        "업계 상식을 뒤집는 급진적 아이디어를 내는 전략가. "
+        "기존 플레이어들이 놓치고 있는 각도에서 접근해 '이게 진짜 되네?' 싶은 아이디어를 낸다.",
+        f"Solution Designer의 접근은 너무 평범하다. "
+        f"'{domain}' 도메인에서 기존 플레이어들이 생각하지 못한 방식으로 문제를 해결하는 아이디어를 제안하라.\n\n"
         f"조건:\n"
         f"- 기존 업계 상식을 완전히 뒤집는 접근\n"
-        f"- 멀티에이전트, 피드백 루프, 자율 학습, 예측 등 최신 AI 기술 조합 활용\n"
-        f"- 'The AI [X]'가 단순 도구가 아닌 자율적 전문가처럼 동작하는 방식\n"
-        f"- 구체적인 기술 메커니즘 포함 (어떻게 동작하는지)\n"
+        f"- 비즈니스 모델 혁신, 유통 방식 혁신, 타겟 고객 재정의 등 다양한 각도 고려\n"
+        f"- 소규모 팀이 빠르게 실행할 수 있는 현실적인 방법\n"
+        f"- 구체적인 실행 메커니즘 포함 (어떻게 동작하는지)\n"
         f"기존 솔루션 디자이너 아이디어와 차별화되는 대담한 아이디어 2~3개를 제안하라.",
         memory, max_tokens=700)
-    print_agent_speech("Innovative AI Agent (혁신 AI 아이디어러)", resp)
+    print_agent_speech("Creative Strategist (창의적 전략가)", resp)
 
     resp = run_agent(client, "Devil's Advocate (비판적 검토자)",
         "솔루션의 약점을 날카롭게 찾아내는 비판적 사고자",
-        f"AI Solution Designer와 Innovative AI Agent의 아이디어를 모두 검토하세요.\n"
+        f"Solution Designer와 Creative Strategist의 아이디어를 모두 검토하세요.\n"
         f"각각의 치명적 약점을 지적하되, 두 아이디어를 결합하면 더 강해지는 부분도 제안하세요.\n"
-        f"기술 구현 난이도, 기존 경쟁자, 규제 리스크, 사용자 수용성 관점에서 분석하세요.",
+        f"실행 난이도, 기존 경쟁자, 규제 리스크, 사용자 수용성 관점에서 분석하세요.",
         memory, max_tokens=600)
     print_agent_speech("Devil's Advocate (비판적 검토자)", resp)
 
-    all_results.append({"round": 1, "focus": "문제 정의 & AI 솔루션"})
+    all_results.append({"round": 1, "focus": "문제 정의 & 솔루션 설계"})
 
     # ── 라운드 2: 사업 모델 & 시장 검증 ──
     if rounds >= 2:
@@ -863,7 +951,7 @@ def phase3_pdf_debate(client, frame: dict, research_data: dict, rounds: int,
 
         resp = run_agent(client, "Business Architect (사업 설계자)",
             "AI 솔루션을 수익성 있는 사업으로 설계하는 전략가",
-            f"토론을 바탕으로 'The AI [{domain}]' 사업 모델을 설계하세요:\n"
+            f"토론을 바탕으로 '{domain}' 사업 모델을 설계하세요:\n"
             f"1. 타겟 고객 정의 (누가 돈을 내는가?)\n"
             f"2. 수익 모델 (구독/거래수수료/B2B 등) + 수치 추정\n"
             f"3. MVP — 6개월 내 만들 수 있는 핵심 기능 3가지\n"
@@ -871,22 +959,42 @@ def phase3_pdf_debate(client, frame: dict, research_data: dict, rounds: int,
             memory, max_tokens=700)
         print_agent_speech("Business Architect (사업 설계자)", resp)
 
+        resp = run_agent(client, "Lean Canvas Validator (린캔버스 검증가)",
+            "린스타트업 방법론 전문가. 린캔버스 9개 블록으로 사업 가정을 검증하고 "
+            "가장 위험한 가정(Riskiest Assumption)을 찾아내는 역할.",
+            f"린캔버스 관점에서 이 사업을 검증하세요:\n\n"
+            f"[린캔버스 9블록 체크]\n"
+            f"1. Problem — 해결할 문제 상위 3가지가 명확히 정의되었는가? 실제 고객 인터뷰로 검증 가능한가?\n"
+            f"2. Customer Segments — 얼리어답터(초기 고객)가 구체적으로 누구인가?\n"
+            f"3. Unique Value Proposition — '왜 이 서비스여야 하는가'를 한 문장으로 설명할 수 있는가?\n"
+            f"4. Solution — 문제를 해결하는 핵심 기능 3가지가 문제와 1:1 대응되는가?\n"
+            f"5. Channels — 초기 고객에게 어떻게 도달할 것인가?\n"
+            f"6. Revenue Streams — 누가 얼마를 왜 지불하는가?\n"
+            f"7. Cost Structure — 가장 큰 비용 항목은?\n"
+            f"8. Key Metrics — 사업이 제대로 가고 있음을 증명하는 핵심 지표 1가지는?\n"
+            f"9. Unfair Advantage — 경쟁자가 쉽게 복사할 수 없는 진짜 강점은?\n\n"
+            f"[가장 위험한 가정 Top 3]\n"
+            f"지금 당장 검증하지 않으면 사업 전체가 무너질 수 있는 가정들을 찾아내고, "
+            f"각각을 어떤 최소 실험(MVE)으로 2주 안에 검증할 수 있는지 제시하세요.",
+            memory, max_tokens=800)
+        print_agent_speech("Lean Canvas Validator (린캔버스 검증가)", resp)
+
         resp = run_agent(client, "Market Validator (시장 검증가)",
             "VC 투자자 관점에서 시장 타당성을 검증하는 분석가",
             f"이 사업의 투자 매력도를 평가하세요:\n"
             f"1. TAM/SAM/SOM 추정\n"
             f"2. 직접 경쟁자 vs 기존 대안 분석\n"
-            f"3. AI 차별점이 만드는 해자(moat)는?\n"
+            f"3. 이 스타트업만의 차별점이 만드는 해자(moat)는?\n"
             f"4. 시리즈 A까지의 핵심 마일스톤",
             memory, max_tokens=600)
         print_agent_speech("Market Validator (시장 검증가)", resp)
 
         resp = run_agent(client, "Strategist (전략 합성가)",
             "모든 논의를 통합하여 최종 사업 방향을 확정하는 컨설턴트",
-            f"지금까지 토론을 종합하여 'The AI [X]' 사업 소개서의 핵심 메시지를 확정하세요:\n"
-            f"1. 최종 서비스명 (The AI [단어])\n"
+            f"지금까지 토론을 종합하여 사업 소개서의 핵심 메시지를 확정하세요:\n"
+            f"1. 최종 서비스명\n"
             f"2. 한 줄 가치 제안 (tagline)\n"
-            f"3. AI가 만드는 진짜 차별점 (기존 서비스와 다른 이유)\n"
+            f"3. 우리 서비스만의 진짜 차별점 (기존 서비스와 다른 이유)\n"
             f"4. 투자자에게 전달할 핵심 메시지 한 문장",
             memory, max_tokens=700)
         print_agent_speech("Strategist (전략 합성가)", resp)
@@ -906,7 +1014,7 @@ def phase3_pdf_debate(client, frame: dict, research_data: dict, rounds: int,
         print_agent_speech("Domain Expert (도메인 현장 전문가)", resp)
 
         resp = run_agent(client, "Investor (VC 투자자)",
-            "AI 스타트업 전문 VC. 이 분야 10개 이상 포트폴리오 보유",
+            "스타트업 전문 VC. 이 분야 10개 이상 포트폴리오 보유",
             f"투자자로서 이 사업에 대해:\n"
             f"- 투자 결정 요인 vs 거부 요인\n"
             f"- 가장 유사한 글로벌 성공 사례 (analogous company)\n"
@@ -921,9 +1029,9 @@ def phase3_pdf_debate(client, frame: dict, research_data: dict, rounds: int,
     conclusion = run_agent(client, "Moderator (종합 분석가)",
         "전체 토론을 종합하여 사업 소개서의 핵심 내용을 확정하는 역할",
         f"전체 토론 결과를 바탕으로 사업 소개서 핵심 내용을 확정하세요:\n"
-        f"1. 서비스명: The AI [X]\n"
+        f"1. 서비스명\n"
         f"2. 해결하는 문제 (한 줄)\n"
-        f"3. AI 솔루션의 핵심 차별점\n"
+        f"3. 우리 솔루션의 핵심 차별점\n"
         f"4. 타겟 고객 및 수익 모델\n"
         f"5. 투자자에게 전달할 핵심 메시지",
         memory, max_tokens=800)
@@ -934,49 +1042,54 @@ def phase3_pdf_debate(client, frame: dict, research_data: dict, rounds: int,
 
 
 def phase4_pdf_synthesize(client, frame: dict, memory: DebateMemory) -> dict:
-    """PDF 모드 전용 Phase 4 — 신사업 컨셉 → 사업 소개서 구조 설계"""
-    banner(4, "The AI [X] 사업 소개서 설계")
+    """신사업 발굴 모드 Phase 4 — 신사업 컨셉 → 사업 소개서 구조 설계"""
+    banner(4, "스타트업 사업 소개서 설계")
 
     domains = frame.get("candidate_domains", [])
-    ai_techs = frame.get("ai_technologies", [])
-    tech_summary = "\n".join(f"- {t['name']}: {t['capability']}" for t in ai_techs)
     selected = frame.get("selected_domain", domains[0] if domains else {})
     domain_name = selected.get("domain", "")
+    # 도메인 핵심 정보 요약 (피치덱 설계 컨텍스트용)
+    tech_summary = "\n".join([
+        f"- 도메인: {selected.get('domain', '')}",
+        f"- 핵심 문제: {selected.get('pain_point', '')}",
+        f"- 솔루션 방향: {selected.get('solution_approach', selected.get('why_ai', ''))}",
+        f"- 시장 규모: {selected.get('market_size', '')}",
+        f"- 타겟 고객: {selected.get('target_customer', '')}",
+    ])
 
     system = textwrap.dedent("""
         당신은 세계 최고의 스타트업 피치덱 디자이너입니다.
-        "The AI Vet" 스타일의 사업 소개서를 JSON으로 설계하세요.
+        에이전트 토론 결과를 바탕으로 사업 소개서를 JSON으로 설계하세요.
         청중은 투자자 또는 경영진입니다.
 
         ⚠️ 핵심 규칙:
-        - title은 반드시 "The AI [도메인명]" 형식 (예: "The AI Vet", "The AI Lawyer", "The AI Farmer")
-        - subtitle은 "새로운 형태의 [대상]을 위한 AI [역할]" 형식
-        - InnovativeAI 섹션(기술 아키텍처)은 반드시 포함
+        - title은 서비스명 (간결하고 기억에 남는 이름)
+        - subtitle은 한 줄 가치 제안
         - 슬라이드는 아래 순서를 따를 것
 
         슬라이드 순서 (12장):
-        1. 타이틀 (type: title) — "The AI [X]" + tagline
+        1. 타이틀 (type: title) — 서비스명 + tagline
         2. 문제 데이터 (type: problem_data) — 시장 수치로 문제 크기 증명
         3. 구조적 문제 (type: problem_structure) — 3~4가지 구조적 문제표
         4. 기존 대안 현황 (type: competitive) — 기존 서비스들의 한계/병목
-        5. 차별점 (type: differentiation) — AI 솔루션만의 차별점 2~3가지
-        6. 시장 조사 (type: market) — TAM/SAM/SOM 또는 핵심 시장 데이터
-        7. 고객 정의 (type: customer) — 타겟 고객 세그먼트
-        8. 비즈니스 모델 (type: business) — 수익 구조 + 수치 추정
-        9. MVP (type: mvp) — 핵심 기능 3가지
-        10. InnovativeAI 아키텍처 (type: tech_arch) — AI 기술 구조 설명
-        11. InnovativeAI 평가 기준 (type: tech_rubric) — AI 품질/안전성 기준
+        5. 차별점 (type: differentiation) — 우리 솔루션만의 차별점 2~3가지
+        6. 린캔버스 (type: lean_canvas) — 9블록 요약 + 가장 위험한 가정 Top 3 & 검증 계획
+        7. 시장 조사 (type: market) — TAM/SAM/SOM 또는 핵심 시장 데이터
+        8. 고객 정의 (type: customer) — 타겟 고객 세그먼트 (얼리어답터 중심)
+        9. 비즈니스 모델 (type: business) — 수익 구조 + 수치 추정
+        10. MVP (type: mvp) — 핵심 기능 3가지
+        11. 실행 로드맵 (type: roadmap) — 6개월/12개월 마일스톤
         12. 비전 (type: vision) — 최종 가치 제안
 
         반환 형식 (JSON만, 코드블록 없이):
         {
-          "title": "The AI [X]",
+          "title": "서비스명",
           "subtitle": "한 줄 가치 제안",
           "tagline": "투자자를 설득할 핵심 문장",
           "slides": [
             {
               "title": "슬라이드 제목",
-              "type": "title|problem_data|problem_structure|competitive|differentiation|market|customer|business|mvp|tech_arch|tech_rubric|vision",
+              "type": "title|problem_data|problem_structure|competitive|differentiation|lean_canvas|market|customer|business|mvp|roadmap|vision",
               "key_points": ["포인트 1", "포인트 2", "포인트 3"],
               "highlight": "가장 강조할 한 문장",
               "data_points": ["수치 또는 근거 1", "수치 또는 근거 2"]
@@ -991,10 +1104,10 @@ def phase4_pdf_synthesize(client, frame: dict, memory: DebateMemory) -> dict:
     conclusions = memory.all_conclusions()
 
     user_msg = textwrap.dedent(f"""
-        보유 AI 기술:
+        선정된 도메인 참조 정보:
         {tech_summary}
 
-        AI 에이전트 토론 결과:
+        에이전트 토론 결과:
         {debate_summary[:2500]}
 
         최종 합의:
@@ -1450,15 +1563,15 @@ def main():
 
     # ── 모드 판단 ──
     innovative_mode = args.innovative_ai or bool(args.pdf)
-    topic = args.topic or "AI 혁신기술 신사업"
+    topic = args.topic or "스타트업 신사업 발굴"
 
-    mode_label = "🚀 혁신 AI 신사업 자동 발굴" if innovative_mode else f"🔍 주제 리서치: {topic}"
+    mode_label = "🚀 스타트업 아이디어 자동 발굴" if innovative_mode else f"🔍 주제 리서치: {topic}"
     print(f"  모드    : {BOLD}{mode_label}{RST}")
     print(f"  라운드  : {args.rounds}  |  NLM 모드: {args.mode}  |  출력: {out_dir}")
     print(f"  시작    : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
     # ════════════════════════════════════════════════════════
-    #  혁신 AI 신사업 발굴 모드
+    #  스타트업 아이디어 발굴 모드
     # ════════════════════════════════════════════════════════
     if innovative_mode:
         # Phase 0 (PDF 옵션): PDF 텍스트 추출
@@ -1467,7 +1580,9 @@ def main():
             extra_knowledge = phase0_extract_pdfs(args.pdf)
 
         # Phase 1: 아이디어 10개 생성
-        if extra_knowledge:
+        if args.user_topic:
+            frame = phase1_from_topic(client, args.user_topic, args.user_problem)
+        elif extra_knowledge:
             frame = phase1_pdf_mode(client, extra_knowledge)
         else:
             frame = phase1_innovative_ai(client)
@@ -1492,7 +1607,7 @@ def main():
         # Phase 4: 리서치 기반 심화 토론
         memory, round_results = phase3_pdf_debate(
             client, frame, research_data, args.rounds,
-            extra_knowledge or INNOVATIVE_AI_KNOWLEDGE
+            extra_knowledge or STARTUP_CONTEXT
         )
 
         # Phase 5: 사업 소개서 설계

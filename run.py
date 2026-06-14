@@ -42,8 +42,8 @@ def print_header():
     clear()
     print(f"""
 {BLUE}{BOLD}╔══════════════════════════════════════════════════╗
-║   AI 신사업 발굴 & 발표자료 자동 생성 파이프라인  ║
-║   PDF 논문 → 도메인 토론 → 신사업 발표자료 자동화  ║
+║   스타트업 아이디어 발굴 & 발표자료 자동 생성     ║
+║   아이디어 발굴 → 에이전트 토론 → 사업 소개서    ║
 ╚══════════════════════════════════════════════════╝{RST}
 """)
 
@@ -149,10 +149,44 @@ def ask_api_key(env: dict) -> str:
 
 
 # ─── STEP 3: 옵션 선택 ──────────────────────────────────────────
-def ask_options() -> dict:
+def ask_mode() -> str:
+    print(f"""
+  {BOLD}── 모드 선택 ──{RST}
+    {GREEN}1{RST}) 자유 토론  — 원하는 주제로 토론 + 발표자료 생성  ← 기본
+    {BLUE}2{RST}) 아이디어 발굴 — 에이전트들이 스타트업 아이디어를 발굴하고 토론
+""")
+    choice = ask("선택", default="1")
+    return "debate" if choice != "2" else "business"
+
+
+def ask_options(mode: str = "debate") -> dict:
+    if mode == "debate":
+        print(f"""
+  {BOLD}── 토론 주제 ──{RST}
+  {DIM}어떤 주제든 입력하세요. 에이전트들이 토론하고 발표자료를 만들어드려요.{RST}
+""")
+        user_topic = ask("토론 주제")
+        if not user_topic:
+            warn("주제를 입력해야 합니다.")
+            return ask_options(mode)
+
+        print(f"  {DIM}이 주제에서 구체적으로 고민하는 부분이 있으면 적어주세요.{RST}")
+        user_problem = ask("구체적 고민/질문 (없으면 Enter)", default="")
+
+    else:
+        print(f"""
+  {BOLD}── 신사업 주제 설정 ──{RST}
+  {DIM}주제를 입력하면 그 주제로 아이디어를 발굴합니다.
+  비워두면 AI가 스스로 신사업 도메인을 발굴합니다.{RST}
+""")
+        user_topic = ask("원하는 주제 (없으면 Enter — AI 자동 발굴)", default="")
+        user_problem = ""
+        if user_topic:
+            print(f"  {DIM}이 주제에서 해결하고 싶은 문제나 불편함이 있으면 적어주세요.{RST}")
+            user_problem = ask("문제점/불편함 (없으면 Enter)", default="")
+
     print(f"""
   {BOLD}── 옵션 (기본값으로 바로 시작하려면 그냥 Enter) ──{RST}
-  {DIM}AI가 자동으로 혁신 기술을 분석하고 최적 신사업 도메인을 찾아냅니다{RST}
 """)
 
     # 라운드 수
@@ -179,29 +213,57 @@ def ask_options() -> dict:
         nlm_mode, no_nlm = "fast", False
 
     return {
-        "rounds":  rounds,
-        "mode":    nlm_mode,
-        "no_nlm":  no_nlm,
+        "rounds":       rounds,
+        "mode":         nlm_mode,
+        "no_nlm":       no_nlm,
+        "user_topic":   user_topic or "",
+        "user_problem": user_problem or "",
+        "pipeline_mode": mode,
     }
 
 
 # ─── STEP 4: 실행 ────────────────────────────────────────────────
 def run_pipeline(opts: dict, api_key: str):
+    is_debate = opts.get("pipeline_mode") == "debate"
+    if is_debate:
+        mode_desc = f"'{opts['user_topic']}' 토론 → 의사결정 인사이트 → 발표자료"
+    elif opts.get("user_topic"):
+        mode_desc = f"'{opts['user_topic']}' 주제 기반 아이디어 발굴 → 에이전트 토론 → 사업 소개서"
+    else:
+        mode_desc = "에이전트들이 스타트업 아이디어 발굴 → 토론 → 사업 소개서"
+
     print(f"""
 {GREEN}{BOLD}╔══════════════════════════════════════════════════╗
 ║  파이프라인 시작!                                ║
-║  AI가 혁신 기술 분석 → 도메인 토론 → 신사업 발굴  ║
 ╚══════════════════════════════════════════════════╝{RST}
+  {mode_desc}
   라운드 : {opts['rounds']}라운드 토론
   검색   : {'NLM 웹 검색 (' + opts['mode'] + ')' if not opts['no_nlm'] else 'Claude만 사용'}
 """)
 
-    cmd = [
-        PY_BIN, str(BASE_DIR / "pipeline.py"),
-        "--innovative-ai",          # 혁신 AI 신사업 발굴 모드
-        "--rounds", str(opts["rounds"]),
-        "--mode",   opts["mode"],
-    ]
+    if is_debate:
+        # 자유 토론 모드: --innovative-ai 없이 topic을 위치 인수로
+        cmd = [
+            PY_BIN, str(BASE_DIR / "pipeline.py"),
+            opts["user_topic"],
+            "--rounds", str(opts["rounds"]),
+            "--mode",   opts["mode"],
+        ]
+        if opts.get("user_problem"):
+            cmd += ["--user-problem", opts["user_problem"]]
+    else:
+        # 신사업 발굴 모드
+        cmd = [
+            PY_BIN, str(BASE_DIR / "pipeline.py"),
+            "--innovative-ai",
+            "--rounds", str(opts["rounds"]),
+            "--mode",   opts["mode"],
+        ]
+        if opts.get("user_topic"):
+            cmd += ["--user-topic", opts["user_topic"]]
+        if opts.get("user_problem"):
+            cmd += ["--user-problem", opts["user_problem"]]
+
     if opts["no_nlm"]:
         cmd.append("--no-nlm")
 
@@ -257,18 +319,24 @@ def main():
     else:
         api_key = ask_api_key(env)
 
-    # ── 주제 & 옵션 ──
-    print(f"\n  {BOLD}[3/3] 발표 주제 설정{RST}")
-    opts = ask_options()
+    # ── 모드 & 주제 & 옵션 ──
+    print(f"\n  {BOLD}[3/3] 모드 및 주제 설정{RST}")
+    pipeline_mode = ask_mode()
+    opts = ask_options(mode=pipeline_mode)
 
     # NLM 스킵이면 강제
     if env.get("SKIP_NLM") == "1":
         opts["no_nlm"] = True
 
     # ── 최종 확인 ──
+    mode_label = "자유 토론" if opts.get("pipeline_mode") == "debate" else "아이디어 발굴"
+    topic_label = opts.get("user_topic") or "에이전트 자동 발굴"
+    problem_label = opts.get("user_problem") or "—"
     print(f"""
 {BLUE}{'─'*52}{RST}
-  모드   : {BOLD}혁신 AI 신사업 자동 발굴{RST}
+  모드   : {BOLD}{mode_label}{RST}
+  주제   : {BOLD}{topic_label}{RST}
+  고민   : {DIM}{problem_label}{RST}
   라운드 : {opts['rounds']}라운드 토론
   검색   : {'NLM 웹 검색 (' + opts['mode'] + ')' if not opts['no_nlm'] else 'Claude만 사용'}
 {BLUE}{'─'*52}{RST}
