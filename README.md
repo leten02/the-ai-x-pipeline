@@ -5,6 +5,10 @@
 `Claude` 멀티 에이전트 토론 + `Google NotebookLM` 웹 리서치를 하나의 파이프라인으로 묶어,
 **아이디어 발굴부터 12슬라이드 사업 소개서 자동 생성까지** 사람 개입 없이 완주합니다.
 
+![에이전트 토론 뷰어 — 실제 실행 결과](assets/debate-viewer.png)
+
+> 실행이 끝나면 위와 같은 **토론 뷰어(HTML)** 가 자동으로 열립니다. 발언 수·참여 에이전트·생성 슬라이드 통계와 함께, 각 페르소나의 발언을 라운드별로 추적할 수 있습니다. *(예시: `The AI Wedding Guard` 자동 발굴 결과)*
+
 ---
 
 ## 한눈에
@@ -33,15 +37,26 @@
 
 ## 파이프라인 구조 (신사업 발굴 모드)
 
+```mermaid
+flowchart TD
+    P0["Phase 0 · PDF 논문 텍스트 추출<br/><i>(--pdf 옵션)</i>"] --> P1
+    P1["Phase 1 · 아이디어 10개 발굴<br/>자율 / 주제 / PDF"] --> P2
+    P2["Phase 2 · 선정 토론 10→1<br/>Champion · Market Critic · Selector"] --> P3
+    P3["Phase 3 · NotebookLM 웹 리서치<br/>실제 시장 데이터"] --> P4
+    P4["Phase 4 · 심화 토론<br/>Lean Canvas · TAM/SAM/SOM · moat"] --> P5
+    P5["Phase 5 · 사업 소개서 설계<br/>12슬라이드 구조 (JSON)"] --> P6
+    P6["Phase 6 · NotebookLM 슬라이드 자동 생성"]
+
+    P2 -. DebateMemory .-> P4
+    P3 -. "--no-nlm 이면 건너뜀" .-> P5
+
+    classDef debate fill:#1e40af,stroke:#93c5fd,color:#fff;
+    classDef nlm fill:#0f766e,stroke:#5eead4,color:#fff;
+    class P2,P4 debate;
+    class P3,P6 nlm;
 ```
-Phase 0  →  (선택) PDF 논문 텍스트 추출
-Phase 1  →  아이디어 10개 발굴 (자율 / 주제 / PDF)
-Phase 2  →  에이전트 토론으로 최고 아이디어 1개 선정 (10 → 1, 3라운드)
-Phase 3  →  NotebookLM 웹 리서치 (실제 시장 데이터 수집)
-Phase 4  →  리서치 기반 심화 토론 (Lean Canvas·TAM/SAM/SOM·moat 검증)
-Phase 5  →  The AI [X] 사업 소개서 설계 (12슬라이드 구조)
-Phase 6  →  NotebookLM 슬라이드 자동 생성
-```
+
+> 파란 단계 = Claude 멀티 에이전트 토론, 청록 단계 = NotebookLM. `DebateMemory`가 토론 맥락을 다음 Phase로 전달합니다.
 
 ---
 
@@ -268,6 +283,24 @@ the-ai-x-pipeline-skill/
 - NotebookLM은 Google 계정 로그인이 필요합니다 (`--no-nlm`으로 우회 가능)
 - Anthropic API 비용이 발생합니다 (실행당 약 $0.05~0.20)
 - NLM 세션은 약 20분 후 만료 — 명령이 실패하면 `nlm login` 재실행
+
+---
+
+## 테스트
+
+결정적 코어(JSON 복구·토론 메모리·ANSI 처리)에 대한 회귀 테스트를 제공합니다.
+LLM 호출·NotebookLM·대화형 TUI는 네트워크·API 키·Chrome 의존이라 단위 테스트 대상에서 제외했습니다.
+
+```bash
+.venv/bin/python3 -m unittest discover tests -v
+# Ran 10 tests — OK
+```
+
+| 대상 | 검증 |
+|------|------|
+| `safe_json` | 정상 JSON · 코드펜스 · 산문 내장 · **잘린 JSON 복구** · 가비지→`{}` |
+| `DebateMemory` | 발언 기록 · `last_n` 최근 N개 · 결론 누적 |
+| `strip_ansi` | 컬러코드 제거 · 평문 보존 |
 
 ---
 
