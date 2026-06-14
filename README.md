@@ -259,16 +259,36 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 
 ---
 
-## AI 스킬로 설치 (Claude Code / Gemini CLI 등)
+## `/the-ai-x-pipeline` — Claude Code 스킬
 
-AI 코딩 도구에서 자연어로 이 파이프라인을 구동할 수 있는 스킬을 제공합니다.
+GitHub에서 받아 스킬 폴더에 넣으면, Claude Code에서 **슬래시 커맨드 `/the-ai-x-pipeline`** 으로
+바로 부를 수 있습니다. (`"신사업 발굴해줘"` 처럼 자연어로 말해도 자동 트리거됩니다.)
 
-1. **다운로드**: 이 저장소의 [`the-ai-x-pipeline-skill/`](./the-ai-x-pipeline-skill) 폴더를 받습니다.
-2. **설치**: 폴더를 AI 도구의 스킬 디렉토리에 넣습니다 (예: `~/.claude/skills/`).
-3. **사용**: `"신사업 아이디어 발굴해줘"`, `"이 주제로 발표자료 만들어줘"` 같이 요청하면 스킬이 셋업·실행·결과 안내까지 처리합니다.
+### 설치 (한 줄)
+
+```bash
+git clone https://github.com/leten02/the-ai-x-pipeline /tmp/aix \
+  && cp -r /tmp/aix/the-ai-x-pipeline-skill ~/.claude/skills/the-ai-x-pipeline
+```
+
+> 설치 위치는 반드시 폴더명을 **`the-ai-x-pipeline`** 으로 맞춰야 슬래시 커맨드 이름이 일치합니다.
+> ZIP으로 받으려면 저장소 **Code → Download ZIP** 후 `the-ai-x-pipeline-skill/` 폴더만
+> `~/.claude/skills/the-ai-x-pipeline/` 로 옮기세요.
+
+### 사용
 
 ```
-the-ai-x-pipeline-skill/
+/the-ai-x-pipeline           # 스킬 호출 → 모드 선택 안내
+```
+또는 자연어로: `"신사업 아이디어 발굴해줘"`, `"이 주제로 발표자료 만들어줘"`.
+스킬이 셋업(클론·venv·키)부터 실행, 결과 안내까지 처리합니다.
+
+> Claude Code는 세션 시작 시 스킬을 로드합니다. 설치 후 **새 세션**에서 인식됩니다.
+
+### 구조
+
+```
+~/.claude/skills/the-ai-x-pipeline/
 ├── SKILL.md                  # 트리거 + 셋업 + 실행 규칙
 └── references/
     ├── modes.md              # 4가지 실행 모드 & 플래그
